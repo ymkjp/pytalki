@@ -25,7 +25,7 @@ Here is the programming problem:
 * Teachers have additional properties like:
  * Languages taught
  * Course for languages taught
-  * The course does not need to be displayed in the user list, but please design a suitable MySQL schema for course
+  * * The course does not need to be displayed in the user list, but please design a suitable MySQL schema for course
 * The list of users should be filtered by:
  * User type
  * Languages spoken
