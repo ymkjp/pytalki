@@ -21,6 +21,7 @@ define("debug", default=False, type=bool)
 define("sqla_uri", default="")
 define("setup", default=False, type=bool)
 
+
 class Application(tornado.web.Application):
     def __init__(self):
         handlers = [

@@ -2,12 +2,9 @@
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, DATETIME, Index
 from sqlalchemy.schema import Column, ForeignKey, Table, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
-# from sqlalchemy.dialects.mysql import INTEGER as Integer
 from sqlalchemy.types import TypeDecorator
 from sqlalchemy.orm import relation, backref
 
-import factory
-from factory.alchemy import SQLAlchemyModelFactory
 from faker import Factory
 
 import random
@@ -55,10 +52,6 @@ class User(Base):
     name = Column('name', String(30), nullable=False)
     created = Column('created', DATETIME, default=datetime.now, nullable=False)
     modified = Column('modified', DATETIME, default=datetime.now, nullable=False)
-    # lang_level = relationship("LangLevel")
-    # teaching_lang = relationship("TeachingLang")
-    # learning_lang = relationship("LearningLang")
-    # course = relationship("Course")
 
     def __init__(self, username, name):
         self.username = username
@@ -71,50 +64,24 @@ class User(Base):
         return "<User('%s')>" % self.id
 
 
-class LangLevel(Base):
-    __tablename__ = 'lang_level'
-    __table_args__ = {'mysql_engine': 'InnoDB'}
+class LangProfile(Base):
+    __tablename__ = 'lang_profile'
+    __table_args__ = (
+        (UniqueConstraint('user_id', 'lang_code', name='unique__idx__user_id__lang_code')),
+        Index('idx__lang_code__is_teaching', 'lang_code', 'is_teaching'),
+        {'mysql_engine': 'InnoDB'}
+    )
     id = Column('id', Integer, primary_key=True)
     user_id = Column('user_id', Integer,
                      ForeignKey('user.id', onupdate='CASCADE', ondelete='CASCADE'), nullable=False)
     lang_code = Column('lang_code', EnumType(enum_class=enum_types.LangCode), index=True, nullable=False)
     lang_level = Column('lang_level', EnumType(enum_class=enum_types.LangLevel))
-    user = relation("User", backref=backref('lang_level', order_by=id))
+    is_learning = Column('is_learning', Boolean, index=True, default=False)
+    is_teaching = Column('is_teaching', Boolean, index=True, default=False)
+    user = relation("User", backref=backref('lang_profile', order_by=id))
 
     def __repr__(self):
-        return "<LangLevel('user_id:%s,lang_code:%s,lang_level:%s')>" % self.user_id, self.lang_code, self.lang_level
-
-
-class TeachingLang(Base):
-    __tablename__ = 'teaching_lang'
-    __table_args__ = (
-        (UniqueConstraint('user_id', 'lang_code', name='unique__idx__user_id__lang_code')),
-        {'mysql_engine': 'InnoDB'}
-    )
-    id = Column(Integer, primary_key=True)
-    user_id = Column('user_id', Integer,
-                     ForeignKey('user.id', onupdate='CASCADE', ondelete='CASCADE'), nullable=False)
-    lang_code = Column(EnumType(enum_class=enum_types.LangCode), index=True, nullable=False)
-    user = relation("User", backref=backref('teaching_lang', order_by=id))
-
-    def __repr__(self):
-        return "<TeachingLang('%s,%s')>" % self.user_id, self.lang_code
-
-
-class LearningLang(Base):
-    __tablename__ = 'learning_lang'
-    __table_args__ = (
-        (UniqueConstraint('user_id', 'lang_code', name='unique__idx__user_id__lang_code')),
-        {'mysql_engine': 'InnoDB'}
-    )
-    id = Column(Integer, primary_key=True)
-    user_id = Column('user_id', Integer,
-                     ForeignKey('user.id', onupdate='CASCADE', ondelete='CASCADE'), nullable=False)
-    lang_code = Column(EnumType(enum_class=enum_types.LangCode), index=True, nullable=False)
-    user = relation("User", backref=backref('learning_lang', order_by=id))
-
-    def __repr__(self):
-        return "<LearningLang('%s,%s')>" % self.user_id, self.lang_code
+        return "<LangProfile('user_id:%s,lang_code:%s,lang_level:%s')>" % self.user_id, self.lang_code, self.lang_level
 
 
 class Course(Base):
@@ -125,7 +92,7 @@ class Course(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column('user_id', Integer,
                      ForeignKey('user.id', onupdate='CASCADE', ondelete='CASCADE'), nullable=False)
-    lang_code = Column(EnumType(enum_class=enum_types.LangCode), index=True, nullable=False)
+    lang_code = Column(EnumType(enum_class=enum_types.LangCode), nullable=False)
     lesson_type = Column(EnumType(enum_class=enum_types.LessonType))
     minutes = Column(Integer)
     itc = Column(Integer)
@@ -138,9 +105,7 @@ class Course(Base):
 
 
 user_table = User.__table__
-lang_level_table = LangLevel.__table__
-teaching_lang_table = TeachingLang.__table__
-learning_lang_table = LearningLang.__table__
+lang_profile_table = LangProfile.__table__
 course_table = Course.__table__
 metadata = Base.metadata
 
@@ -152,7 +117,7 @@ faker = Factory.create()
 
 
 def insert_dummy_data(session):
-    for i in range(10):
+    for i in range(20):
         add_one_user(session)
 
 
@@ -161,74 +126,34 @@ def add_one_user(session):
     session.add(user)
     session.commit()
 
-    session.add(LangLevel(user_id=user.id,
-                          lang_code=random.choice(list(enum_types.LangCode)),
-                          lang_level=random.choice(list(enum_types.LangLevel))))
+    for i in range(random.randint(1, 3)):
+        add_some_lang(session, user)
 
-    session.add(TeachingLang(user_id=user.id,
-                             lang_code=random.choice(list(enum_types.LangCode))))
-
-    session.add(LearningLang(user_id=user.id,
-                             lang_code=random.choice(list(enum_types.LangCode))))
-
-    session.add(Course(user_id=user.id,
-                       lang_code=random.choice(list(enum_types.LangCode)),
-                       lesson_type=random.choice(list(enum_types.LessonType)),
-                       minutes=random.randint(1, 12) * 10,
-                       itc=random.randint(1, 100) * 10,
-                       session_count=random.randint(0, 1000),
-                       rating=random.randint(0, 5)))
     session.commit()
 
 
-# class UserFactory(SQLAlchemyModelFactory):
-#     class Meta:
-#         model = User
-#     # id = factory.Sequence(lambda n: n)
-#     name = faker.name()
-#     username = faker.user_name()
-#     # email = faker.safe_email()
-#     # password = faker.md5()
-#     # lang_level = factory.SubFactory(LangLevelFactory)
-#     # teaching_lang = factory.SubFactory(TeachingLang)
-#     # learning_lang = factory.SubFactory(LearningLang)
-#     # course = factory.SubFactory(Course)
-#
-#
-# class LangLevelFactory(SQLAlchemyModelFactory):
-#     class Meta:
-#         model = LangLevel
-#     # id = factory.Sequence(lambda n: n)
-#     user_id = factory.SubFactory(UserFactory)
-#     lang_code = random.choice(list(enum_types.LangCode))
-#     lang_level = random.choice(list(enum_types.LangLevel))
-#
-#
-# class TeachingLangFactory(SQLAlchemyModelFactory):
-#     class Meta:
-#         model = TeachingLang
-#     # id = factory.Sequence(lambda n: n)
-#     user_id = factory.SubFactory(UserFactory)
-#     lang_code = random.choice(list(enum_types.LangCode))
-#
-#
-# class LearningLangFactory(SQLAlchemyModelFactory):
-#     class Meta:
-#         model = LearningLang
-#     # id = factory.Sequence(lambda n: n)
-#     user_id = factory.SubFactory(UserFactory)
-#     lang_code = random.choice(list(enum_types.LangCode))
-#
-#
-# class CourseFactory(SQLAlchemyModelFactory):
-#     class Meta:
-#         model = Course
-#     # id = factory.Sequence(lambda n: n)
-#     user_id = factory.SubFactory(UserFactory)
-#     lang_code = random.choice(list(enum_types.LangCode))
-#     lesson_type = random.choice(list(enum_types.LessonType))
-#     minutes = random.randint(1, 12) * 10
-#     itc = random.randint(1, 100) * 100
-#     session_count = random.randint(0, 1000)
-#     rating = random.randint(0, 5)
+def add_some_lang(session, user):
+    lang_code = random.choice(list(enum_types.LangCode))
+    lang_level = random.choice(list(enum_types.LangLevel))
+    is_teaching = faker.boolean() and (3 <= lang_level.value)
+    is_learning = faker.boolean() and (lang_level.value <= 6)
+
+    session.add(LangProfile(user_id=user.id,
+                            lang_code=lang_code,
+                            lang_level=lang_level,
+                            is_learning=is_teaching,
+                            is_teaching=is_learning,
+                            ))
+
+    if is_teaching:
+        for i in range(random.randint(1, 5)):
+            session.add(Course(user_id=user.id,
+                               lang_code=lang_code,
+                               lesson_type=random.choice(list(enum_types.LessonType)),
+                               minutes=random.randint(1, 12) * 10,
+                               itc=random.randint(1, 100) * 10,
+                               session_count=random.randint(0, 1000),
+                               rating=random.randint(0, 5),
+                               ))
+
 
