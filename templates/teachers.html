@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<div id="content">
+  <h2>{{title}}</h2>
+  <ul class="media-list">
+    {% for user in list %}
+    <li class="media">
+      <div class="media-left media-top">
+        <a href="#">
+          <img class="media-object" src="http://placehold.it/80&text={{ user.id }}" width="80">
+        </a>
+      </div>
+      <div class="media-body">
+        <h4 class="media-heading">{{ user.name }}</h4>
+        <ul>
+          {% for lang in user.lang_profile %}
+          <li>{{ lang.lang_code }} ({{ lang.lang_level }})</li>
+        {% endfor %}
+        </ul>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}
