@@ -12,12 +12,6 @@ from datetime import datetime
 import enum_types
 import utils
 
-'''
-
-@todo
- 1. Pagination
-'''
-
 Base = declarative_base()
 
 
@@ -91,11 +85,13 @@ metadata = Base.metadata
 def init_db(engine):
     Base.metadata.create_all(bind=engine)
 
+
 faker = Factory.create()
 
 
 def insert_dummy_data(session):
-    for i in range(100):
+    dummy_users_count = 100
+    for i in range(dummy_users_count):
         add_one_user(session)
 
     session.commit()
