@@ -11,7 +11,6 @@ import tornado.web
 import tornado.escape
 import tornado.options
 from tornado.options import(define, options)
-# from tornado_mysql import pools
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -26,8 +25,8 @@ import enum_types
 
 define("port", default=5000, type=int)
 define("debug", default=False, type=bool)
-define("sqla_uri", default="")
-define("setup", default=False, type=bool)
+define("sqla_uri", default="", help="database resource like: 'mysql://username:password@localhost/db_name'")
+define("setup", default=False, type=bool, help="setup dummy data")
 
 
 class Application(tornado.web.Application):
