@@ -1,6 +1,20 @@
 # pytalki
 
-Here is the programming problem:
+## Getting Started
+1. Install packages by `pip install -r requirements.txt`
+2. Start the web server as below
+3. Access to [http://localhost:5000/](http://localhost:5000/)
+
+```sh
+# Setup dummy data and run server
+$ python app.py --setup --sqla_uri "mysql://username:password@localhost/db_name"
+
+# Run server without setting-up dummy data
+$ python app.py --sqla_uri "mysql://username:password@localhost/db_name"
+```
+
+
+## Here is the programming problem:
 
 #### Required Python Libraries to Use:
 * Python (of course)
